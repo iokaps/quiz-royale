@@ -1,17 +1,60 @@
 import { kmClient } from '@/services/km-client';
 
+export interface Question {
+	id: string;
+	text: string;
+	options: {
+		A: string;
+		B: string;
+		C: string;
+		D: string;
+	};
+	correctAnswer: 'A' | 'B' | 'C' | 'D';
+	difficulty: number;
+}
+
+export interface PlayerData {
+	name: string;
+	isEliminated: boolean;
+	eliminatedAtQuestion: number;
+	answers: Record<number, 'A' | 'B' | 'C' | 'D'>;
+	hasAnswered: boolean;
+}
+
 export interface GlobalState {
 	controllerConnectionId: string;
 	started: boolean;
 	startTimestamp: number;
-	players: Record<string, { name: string }>;
+
+	// Game phases: 'lobby' | 'question' | 'reveal' | 'transition' | 'finished'
+	gamePhase: 'lobby' | 'question' | 'reveal' | 'transition' | 'finished';
+
+	// Current question data
+	currentQuestion: Question | null;
+	questionNumber: number;
+	questionStartTime: number;
+
+	// Player data and elimination tracking
+	players: Record<string, PlayerData>;
+	eliminatedPlayers: string[]; // Array of clientIds in elimination order (sorted lexicographically for consistent tie-breaking)
+	winner: string; // clientId of the winner
+
+	// Question generation state
+	isGeneratingQuestion: boolean;
 }
 
 const initialState: GlobalState = {
 	controllerConnectionId: '',
 	started: false,
 	startTimestamp: 0,
-	players: {}
+	gamePhase: 'lobby',
+	currentQuestion: null,
+	questionNumber: 0,
+	questionStartTime: 0,
+	players: {},
+	eliminatedPlayers: [],
+	winner: '',
+	isGeneratingQuestion: false
 };
 
 export const globalStore = kmClient.store<GlobalState>('global', initialState);

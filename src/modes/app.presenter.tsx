@@ -1,15 +1,31 @@
 import { config } from '@/config';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useGlobalController } from '@/hooks/useGlobalController';
+import { useServerTimer } from '@/hooks/useServerTime';
 import { generateLink } from '@/kit/generate-link';
 import { HostPresenterLayout } from '@/layouts/host-presenter';
 import { kmClient } from '@/services/km-client';
-import { ConnectionsView } from '@/views/connections-view';
-import { KmQrCode } from '@kokimoki/shared';
+import { globalStore } from '@/state/stores/global-store';
+import { cn } from '@/utils/cn';
+import { KmQrCode, KmTimeCountdown } from '@kokimoki/shared';
 import * as React from 'react';
+import ReactMarkdown from 'react-markdown';
+import { useSnapshot } from 'valtio';
 
 const App: React.FC = () => {
 	const { title } = config;
+	const {
+		started,
+		gamePhase,
+		currentQuestion,
+		questionNumber,
+		questionStartTime,
+		players,
+		eliminatedPlayers,
+		winner
+	} = useSnapshot(globalStore.proxy);
+
+	const serverTime = useServerTimer();
 
 	useGlobalController();
 	useDocumentTitle(title);
@@ -22,30 +38,195 @@ const App: React.FC = () => {
 		mode: 'player'
 	});
 
+	const totalPlayers = Object.keys(players).length;
+	const activePlayers = Object.values(players).filter(
+		(p) => !p.isEliminated
+	).length;
+	const timeElapsed = questionStartTime ? serverTime - questionStartTime : 0;
+	const timeRemaining = Math.max(0, config.questionTimeLimit - timeElapsed);
+
+	if (!started) {
+		return (
+			<HostPresenterLayout.Root>
+				<HostPresenterLayout.Header>
+					<div className="text-sm opacity-70">{config.presenterLabel}</div>
+				</HostPresenterLayout.Header>
+
+				<HostPresenterLayout.Main>
+					<div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
+						{/* Join Info */}
+						<div className="rounded-lg border border-gray-200 bg-white shadow-md">
+							<div className="flex flex-col gap-4 p-8 text-center">
+								<h2 className="text-3xl font-bold">{config.playerLinkLabel}</h2>
+								<KmQrCode data={playerLink} size={300} interactive={false} />
+								<div className="break-all font-mono text-lg text-blue-600">
+									{playerLink.replace('https://', '').replace('http://', '')}
+								</div>
+							</div>
+						</div>
+
+						{/* Game Status */}
+						<div className="space-y-6">
+							<div className="rounded-lg border border-gray-200 bg-white p-8 shadow-md">
+								<div className="prose prose-xl mx-auto text-center">
+									<ReactMarkdown>{config.gameLobbyMd}</ReactMarkdown>
+								</div>
+							</div>
+
+							<div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow-md">
+								<h3 className="mb-4 text-2xl font-bold">
+									{config.players} Ready
+								</h3>
+								<div className="mb-2 text-6xl font-bold text-blue-600">
+									{totalPlayers}
+								</div>
+								<div className="text-lg text-gray-600">
+									Waiting for host to start...
+								</div>
+							</div>
+						</div>
+					</div>
+				</HostPresenterLayout.Main>
+			</HostPresenterLayout.Root>
+		);
+	}
+
 	return (
 		<HostPresenterLayout.Root>
 			<HostPresenterLayout.Header>
-				<div className="text-sm opacity-70">{config.presenterLabel}</div>
+				<div className="flex w-full items-center justify-between">
+					<div className="text-xl font-bold">{config.presenterLabel}</div>
+					<div className="grid grid-cols-3 gap-8 text-center">
+						<div>
+							<div className="text-3xl font-bold text-blue-600">
+								{questionNumber}
+							</div>
+							<div className="text-sm text-gray-600">{config.question}</div>
+						</div>
+						<div>
+							<div className="text-3xl font-bold text-green-600">
+								{activePlayers}
+							</div>
+							<div className="text-sm text-gray-600">
+								{config.playersRemaining}
+							</div>
+						</div>
+						<div>
+							<div className="text-3xl font-bold text-red-600">
+								{eliminatedPlayers.length}
+							</div>
+							<div className="text-sm text-gray-600">{config.eliminated}</div>
+						</div>
+					</div>
+				</div>
 			</HostPresenterLayout.Header>
 
 			<HostPresenterLayout.Main>
-				<div className="rounded-lg border border-gray-200 bg-white shadow-md">
-					<div className="flex flex-col gap-2 p-6">
-						<h2 className="text-xl font-bold">{config.playerLinkLabel}</h2>
-						<KmQrCode data={playerLink} size={200} interactive={false} />
-
-						<a
-							href={playerLink}
-							target="_blank"
-							rel="noreferrer"
-							className="break-all text-blue-600 underline hover:text-blue-700"
-						>
-							{config.playerLinkLabel}
-						</a>
+				{/* Winner Announcement */}
+				{gamePhase === 'finished' && winner && (
+					<div className="rounded-lg border border-yellow-300 bg-yellow-50 p-12 text-center shadow-md">
+						<div className="mb-4 text-8xl">🏆</div>
+						<h2 className="mb-4 text-5xl font-bold text-yellow-800">
+							{config.winner}!
+						</h2>
+						<p className="text-3xl text-yellow-700">
+							<strong>{players[winner]?.name}</strong>
+						</p>
+						<p className="mt-2 text-2xl text-yellow-600">{config.champion}</p>
 					</div>
-				</div>
+				)}
 
-				<ConnectionsView />
+				{/* Current Question Display */}
+				{currentQuestion && gamePhase !== 'finished' && (
+					<div className="space-y-8">
+						{/* Question Header with Timer */}
+						<div className="text-center">
+							<h2 className="mb-4 text-4xl font-bold">
+								{config.question} {questionNumber}
+							</h2>
+
+							{gamePhase === 'question' && (
+								<div className="text-2xl">
+									<div className="mb-2 text-gray-600">
+										{config.timeRemaining}
+									</div>
+									<div className="font-mono text-4xl">
+										<KmTimeCountdown ms={timeRemaining} />
+									</div>
+								</div>
+							)}
+						</div>
+
+						{/* Question Text */}
+						<div className="rounded-lg bg-white p-12 text-center shadow-md">
+							<h3 className="text-3xl font-bold">{currentQuestion.text}</h3>
+						</div>
+
+						{/* Answer Options */}
+						<div className="grid grid-cols-2 gap-6">
+							{Object.entries(currentQuestion.options).map(([key, text]) => {
+								const isCorrect = key === currentQuestion.correctAnswer;
+								return (
+									<div
+										key={key}
+										className={cn(
+											'flex items-center space-x-6 rounded-lg border-4 p-8 text-2xl',
+											gamePhase === 'reveal' &&
+												isCorrect &&
+												'border-green-500 bg-green-50',
+											gamePhase === 'reveal' &&
+												!isCorrect &&
+												'border-gray-300 bg-gray-50',
+											gamePhase !== 'reveal' && 'border-blue-300 bg-blue-50'
+										)}
+									>
+										<div
+											className={cn(
+												'flex h-16 w-16 items-center justify-center rounded-full text-2xl font-bold',
+												gamePhase === 'reveal' &&
+													isCorrect &&
+													'bg-green-500 text-white',
+												gamePhase === 'reveal' &&
+													!isCorrect &&
+													'bg-gray-300 text-gray-700',
+												gamePhase !== 'reveal' && 'bg-blue-500 text-white'
+											)}
+										>
+											{key}
+										</div>
+										<span className="flex-1 font-semibold">{text}</span>
+										{gamePhase === 'reveal' && isCorrect && (
+											<span className="text-4xl text-green-600">✓</span>
+										)}
+									</div>
+								);
+							})}
+						</div>
+
+						{/* Answer Reveal Info */}
+						{gamePhase === 'reveal' && (
+							<div className="rounded-lg bg-green-50 p-8 text-center">
+								<div className="mb-2 text-2xl font-bold text-green-800">
+									{config.correctAnswer}: {currentQuestion.correctAnswer}
+								</div>
+								<div className="text-lg text-green-700">
+									{eliminatedPlayers.length > 0
+										? `${eliminatedPlayers.length} players eliminated this round`
+										: 'All remaining players got it right!'}
+								</div>
+							</div>
+						)}
+					</div>
+				)}
+
+				{/* Waiting for Next Question */}
+				{gamePhase === 'transition' && (
+					<div className="rounded-lg bg-blue-50 p-12 text-center shadow-md">
+						<div className="prose prose-2xl mx-auto text-blue-800">
+							<ReactMarkdown>{config.waitingForNextQuestionMd}</ReactMarkdown>
+						</div>
+					</div>
+				)}
 			</HostPresenterLayout.Main>
 		</HostPresenterLayout.Root>
 	);

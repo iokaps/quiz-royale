@@ -10,7 +10,7 @@ interface Props {
 export const DevFrame: FC<Props> = ({ clientKey, context }) => {
 	const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-	const [link, setLink] = useState('');
+	const [link, setLink] = useState<string | null>(null);
 
 	const onMessage = useCallback(
 		(event: MessageEvent) => {
@@ -49,25 +49,29 @@ export const DevFrame: FC<Props> = ({ clientKey, context }) => {
 			<div className="inline-flex justify-center gap-3 py-2 text-sm">
 				<div className="font-semibold">{clientKey}</div>
 
-				<a
-					href={link}
-					className="hover:link"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					New tab
-				</a>
+				{link && (
+					<a
+						href={link}
+						className="hover:link"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						New tab
+					</a>
+				)}
 				<button className="hover:link" onClick={clearStorage}>
 					Reset
 				</button>
 			</div>
 
-			<iframe
-				ref={iframeRef}
-				className="h-full w-full"
-				title={clientKey}
-				src={link}
-			/>
+			{link && (
+				<iframe
+					ref={iframeRef}
+					className="h-full w-full"
+					title={clientKey}
+					src={link}
+				/>
+			)}
 		</div>
 	);
 };

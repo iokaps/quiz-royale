@@ -4,13 +4,16 @@ import { config } from '@/config';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useGlobalController } from '@/hooks/useGlobalController';
 import { PlayerLayout } from '@/layouts/player';
+import { kmClient } from '@/services/km-client';
 import { playerActions } from '@/state/actions/player-actions';
 import { globalStore } from '@/state/stores/global-store';
 import { playerStore } from '@/state/stores/player-store';
 import { ConnectionsView } from '@/views/connections-view';
 import { CreateProfileView } from '@/views/create-profile-view';
+import { EliminatedView } from '@/views/eliminated-view';
 import { GameLobbyView } from '@/views/game-lobby-view';
-import { SharedStateView } from '@/views/shared-state-view';
+import { QuestionView } from '@/views/question-view';
+import { WinnerView } from '@/views/winner-view';
 import { KmModalProvider } from '@kokimoki/shared';
 import * as React from 'react';
 import { useSnapshot } from 'valtio';
@@ -18,19 +21,38 @@ import { useSnapshot } from 'valtio';
 const App: React.FC = () => {
 	const { title } = config;
 	const { name, currentView } = useSnapshot(playerStore.proxy);
-	const { started } = useSnapshot(globalStore.proxy);
+	const { started, gamePhase, players, winner } = useSnapshot(
+		globalStore.proxy
+	);
 
 	useGlobalController();
 	useDocumentTitle(title);
 
 	React.useEffect(() => {
-		// While game start, force view to 'shared-state', otherwise to 'lobby'
-		if (started) {
-			playerActions.setCurrentView('shared-state');
-		} else {
+		if (!started) {
 			playerActions.setCurrentView('lobby');
+			// Clear any selected answer when game stops
+			playerActions.clearSelectedAnswer();
+			return;
 		}
-	}, [started]);
+
+		// Handle game state transitions for players
+		const currentPlayer = players[kmClient.id];
+
+		if (winner === kmClient.id) {
+			playerActions.setCurrentView('winner');
+		} else if (currentPlayer?.isEliminated) {
+			playerActions.setCurrentView('eliminated');
+		} else if (
+			gamePhase === 'question' ||
+			gamePhase === 'reveal' ||
+			gamePhase === 'transition'
+		) {
+			playerActions.setCurrentView('question');
+		} else if (gamePhase === 'finished') {
+			playerActions.setCurrentView('winner');
+		}
+	}, [started, gamePhase, players, winner]);
 
 	if (!name) {
 		return (
@@ -69,8 +91,9 @@ const App: React.FC = () => {
 			<PlayerLayout.Header />
 
 			<PlayerLayout.Main>
-				{currentView === 'shared-state' && <SharedStateView />}
-				{/* Add new views here */}
+				{currentView === 'question' && <QuestionView />}
+				{currentView === 'eliminated' && <EliminatedView />}
+				{currentView === 'winner' && <WinnerView />}
 			</PlayerLayout.Main>
 
 			<PlayerLayout.Footer>

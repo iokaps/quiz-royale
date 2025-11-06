@@ -4,7 +4,7 @@ import { useGlobalController } from '@/hooks/useGlobalController';
 import { generateLink } from '@/kit/generate-link';
 import { HostPresenterLayout } from '@/layouts/host-presenter';
 import { kmClient } from '@/services/km-client';
-import { SharedStateView } from '@/views/shared-state-view';
+import { HostGameView } from '@/views/host-game-view';
 import { KmQrCode } from '@kokimoki/shared';
 import * as React from 'react';
 
@@ -59,7 +59,7 @@ const App: React.FC = () => {
 					</div>
 				</div>
 
-				<SharedStateView />
+				<HostGameView />
 			</HostPresenterLayout.Main>
 		</HostPresenterLayout.Root>
 	);

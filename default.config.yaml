@@ -32,39 +32,81 @@ theme:
   depth: '1'
 
 # Translations
-title: 'Host Starter'
+title: 'Quiz Royale'
 
 gameLobbyMd: |
-  # Waiting for game to start...
-  The game will start once the host presses the start button.
+  # Get ready for Quiz Royale!
+  Answer questions correctly to stay in the game. Last player standing wins!
 
 connectionsMd: |
-  # Connections example
+  # Players Connected
 
-sharedStateMd: |
-  # Shared State example
+questionMd: |
+  # Question
+
+eliminatedMd: |
+  # You have been eliminated!
+  Better luck next time!
+
+winnerMd: |
+  # Congratulations!
+  You are the Quiz Royale Champion!
+
+waitingForNextQuestionMd: |
+  # Next question coming up...
 
 players: 'Players'
+playersRemaining: 'Players Remaining'
+eliminated: 'Eliminated'
+question: 'Question'
 timeElapsed: 'Time elapsed'
-startButton: 'Start Game'
+timeRemaining: 'Time remaining'
+startButton: 'Start Quiz Royale'
 stopButton: 'Stop Game'
-
+nextQuestionButton: 'Next Question'
 loading: 'Loading...'
+generateQuestionLoading: 'Generating question...'
 
 menuTitle: 'Menu'
-menuConnections: 'Connections'
+menuConnections: 'Players'
 menuGameLobby: 'Lobby'
 
 playerNameTitle: 'Enter Your Name'
 playerNamePlaceholder: 'Your name...'
 playerNameLabel: 'Name:'
-playerNameButton: 'Continue'
+playerNameButton: 'Join Quiz Royale'
 
-hostLabel: 'Host'
-presenterLabel: 'Presenter'
+hostLabel: 'Quiz Master'
+presenterLabel: 'Quiz Royale'
 
-gameLinksTitle: 'Game Links'
+gameLinksTitle: 'Quiz Royale Links'
 playerLinkLabel: 'Player Link'
-presenterLinkLabel: 'Presenter Link'
+presenterLinkLabel: 'Presenter Display'
 
 menuAriaLabel: 'Open menu drawer'
+
+# Quiz specific
+answerA: 'A'
+answerB: 'B'
+answerC: 'C'
+answerD: 'D'
+selectAnswer: 'Select your answer'
+correctAnswer: 'Correct Answer'
+yourAnswer: 'Your Answer'
+finalScore: 'Final Score'
+winner: 'Winner'
+champion: 'Quiz Royale Champion'
+
+# Timing (in milliseconds)
+questionTimeLimit: 10000 # 10 seconds
+answerRevealTime: 3000 # 3 seconds
+questionTransitionTime: 1000 # 1 second - faster transitions
+
+# Audio settings
+enableAudio: true
+correctAnswerSoundUrl: '' # URL to correct answer sound
+eliminationSoundUrl: '' # URL to elimination sound
+
+# AI Configuration
+aiSystemPrompt: 'You are a trivia question generator. Create engaging multiple-choice questions with exactly 4 options (A, B, C, D). Always vary the topic and category for each question. Return only valid JSON in this exact format: {"question": "Question text here?", "options": {"A": "Option A", "B": "Option B", "C": "Option C", "D": "Option D"}, "correctAnswer": "A"}'
+aiUserPromptTemplate: 'Generate a unique trivia question with difficulty level {difficulty}. Difficulty guidelines: 1=very basic common knowledge (colors, simple animals), 2=easy everyday facts, 3=school-level knowledge, 4=general education, 5=requires some expertise, 6=challenging specialized knowledge, 7=very difficult expert level, 8+=extremely obscure. Pick a random category from: general knowledge, science, history, sports, entertainment, geography, literature, movies, music, nature, technology, food, art. Ensure the question matches the difficulty level appropriately. Make it appropriate for all ages and avoid repetitive topics.'
