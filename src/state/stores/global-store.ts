@@ -18,6 +18,7 @@ export interface PlayerData {
 	isEliminated: boolean;
 	eliminatedAtQuestion: number;
 	answers: Record<number, 'A' | 'B' | 'C' | 'D'>;
+	answerTimestamps: Record<number, number>; // question number -> timestamp when answered
 	hasAnswered: boolean;
 }
 

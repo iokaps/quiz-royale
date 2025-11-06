@@ -14,8 +14,22 @@ export const globalActions = {
 			globalState.currentQuestion = null; // Clear any existing question
 			globalState.questionStartTime = 0;
 
-			// Clear all players from previous game - they will be re-added as they join
-			globalState.players = {};
+			// Reset existing players' game state but keep them registered
+			Object.values(globalState.players).forEach((player) => {
+				player.isEliminated = false;
+				player.eliminatedAtQuestion = 0;
+				player.answers = {};
+				player.answerTimestamps = {};
+				player.hasAnswered = false;
+			});
+
+			console.log(
+				`GAME START DEBUG: Starting game with ${Object.keys(globalState.players).length} players`
+			);
+			console.log(
+				`GAME START DEBUG: Players:`,
+				Object.entries(globalState.players).map(([id, p]) => `${id}: ${p.name}`)
+			);
 		});
 
 		// Generate the first question immediately
@@ -39,33 +53,70 @@ export const globalActions = {
 				player.isEliminated = false;
 				player.eliminatedAtQuestion = 0;
 				player.answers = {};
+				player.answerTimestamps = {};
 				player.hasAnswered = false;
 			});
 		});
 	},
 
 	async generateQuestion(difficulty: number) {
-		const currentState = globalStore.proxy;
+		// Use a transaction to atomically check and set the generation flag
+		const canGenerate = await kmClient.transact(
+			[globalStore],
+			([globalState]) => {
+				// Prevent multiple simultaneous question generations
+				if (globalState.isGeneratingQuestion) {
+					return false;
+				}
 
-		// Prevent multiple simultaneous question generations
-		if (currentState.isGeneratingQuestion) {
-			console.log('Question generation already in progress, skipping...');
+				// Don't generate if we already have a current question or are in question phase
+				if (
+					globalState.currentQuestion ||
+					globalState.gamePhase === 'question'
+				) {
+					return false;
+				}
+
+				// Atomically set the generation flag
+				globalState.isGeneratingQuestion = true;
+				return true;
+			}
+		);
+
+		if (!canGenerate) {
+			console.log(
+				'Question generation already in progress or question exists, skipping...'
+			);
 			return;
 		}
 
-		// Don't generate if we already have a current question
-		if (currentState.currentQuestion) {
-			console.log('Current question already exists, skipping generation...');
+		const currentState = globalStore.proxy;
+
+		// Don't generate questions if no players are in the game
+		const activePlayers = Object.values(currentState.players).filter(
+			(p) => !p.isEliminated
+		);
+		console.log(
+			`PLAYER DEBUG: Checking for active players. Total players: ${Object.keys(currentState.players).length}, Active players: ${activePlayers.length}`
+		);
+		console.log(
+			`PLAYER DEBUG: All players:`,
+			Object.entries(currentState.players).map(
+				([id, p]) => `${id}: ${p.name} (eliminated: ${p.isEliminated})`
+			)
+		);
+
+		if (activePlayers.length === 0) {
+			console.log('No active players, skipping question generation');
+			await kmClient.transact([globalStore], ([globalState]) => {
+				globalState.isGeneratingQuestion = false;
+			});
 			return;
 		}
 
 		console.log(
 			`Generating question with difficulty ${difficulty} for question #${currentState.questionNumber}`
 		);
-
-		await kmClient.transact([globalStore], ([globalState]) => {
-			globalState.isGeneratingQuestion = true;
-		});
 
 		try {
 			// Add randomness to ensure variety
@@ -201,7 +252,25 @@ export const globalActions = {
 				globalState.gamePhase = 'finished';
 			} else if (remainingPlayers.length === 0) {
 				console.log(`Game finished - everyone eliminated`);
-				// Everyone eliminated
+
+				// Find the fastest answerer among all players for the final question
+				const currentQuestionNumber = globalState.questionNumber;
+				const allAnswerers = Object.entries(globalState.players)
+					.filter(
+						([_, player]) => player.answerTimestamps[currentQuestionNumber]
+					)
+					.sort(
+						(a, b) =>
+							a[1].answerTimestamps[currentQuestionNumber] -
+							b[1].answerTimestamps[currentQuestionNumber]
+					);
+
+				if (allAnswerers.length > 0) {
+					const fastestAnswerer = allAnswerers[0][0];
+					console.log(`Fastest answerer wins: ${fastestAnswerer}`);
+					globalState.winner = fastestAnswerer;
+				}
+
 				globalState.gamePhase = 'finished';
 			} else {
 				console.log(`Game continues with ${remainingPlayers.length} players`);
@@ -218,7 +287,7 @@ export const globalActions = {
 			globalState.gamePhase = 'transition';
 			globalState.questionNumber += 1;
 			globalState.currentQuestion = null; // Clear previous question immediately
-			globalState.questionStartTime = 0;
+			globalState.questionStartTime = kmClient.serverTimestamp(); // Set transition start time
 		});
 
 		// Calculate difficulty based on question number with gradual progression
@@ -256,13 +325,22 @@ export const globalActions = {
 			`Next question will be #${questionNumber} with difficulty ${difficulty}`
 		);
 
-		// Generate next question immediately
+		// Generate next question immediately to avoid race conditions
 		await this.generateQuestion(difficulty);
 	},
 
 	async eliminateInactivePlayers() {
 		await kmClient.transact([globalStore], ([globalState]) => {
 			if (globalState.gamePhase !== 'question') return;
+
+			// Don't process eliminations if no players are in the game
+			const activePlayers = Object.values(globalState.players).filter(
+				(p) => !p.isEliminated
+			);
+			if (activePlayers.length === 0) {
+				console.log('No active players, skipping timeout elimination');
+				return;
+			}
 
 			const currentTime = kmClient.serverTimestamp();
 			const timeLimit = config.questionTimeLimit;
@@ -290,8 +368,55 @@ export const globalActions = {
 					`Eliminated ${timeoutEliminations.length} players for timeout`
 				);
 
-				// Move to reveal phase
-				globalState.gamePhase = 'reveal';
+				// Check for winner after timeout eliminations
+				const remainingPlayers = Object.entries(globalState.players)
+					.filter(([_, player]) => !player.isEliminated)
+					.map(([clientId]) => clientId);
+
+				console.log(
+					`TIMEOUT DEBUG: After eliminations, remaining players: ${remainingPlayers.length}`,
+					remainingPlayers
+				);
+
+				if (remainingPlayers.length === 1) {
+					console.log(
+						`TIMEOUT DEBUG: Game finished - winner: ${remainingPlayers[0]}`
+					);
+					globalState.winner = remainingPlayers[0];
+					globalState.gamePhase = 'finished';
+				} else if (remainingPlayers.length === 0) {
+					console.log(
+						`TIMEOUT DEBUG: Game finished - everyone eliminated by timeout`
+					);
+
+					// Find the fastest answerer among all players for the final question
+					const currentQuestionNumber = globalState.questionNumber;
+					const allAnswerers = Object.entries(globalState.players)
+						.filter(
+							([_, player]) => player.answerTimestamps[currentQuestionNumber]
+						)
+						.sort(
+							(a, b) =>
+								a[1].answerTimestamps[currentQuestionNumber] -
+								b[1].answerTimestamps[currentQuestionNumber]
+						);
+
+					if (allAnswerers.length > 0) {
+						const fastestAnswerer = allAnswerers[0][0];
+						console.log(
+							`TIMEOUT DEBUG: Fastest answerer wins: ${fastestAnswerer}`
+						);
+						globalState.winner = fastestAnswerer;
+					}
+
+					globalState.gamePhase = 'finished';
+				} else {
+					console.log(
+						`TIMEOUT DEBUG: Game continues with ${remainingPlayers.length} players`
+					);
+					// Move to reveal phase
+					globalState.gamePhase = 'reveal';
+				}
 			}
 		});
 	}

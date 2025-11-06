@@ -12,6 +12,16 @@ export const WinnerView: React.FC = () => {
 	const isWinner = winner === kmClient.id;
 	const winnerPlayer = winner ? players[winner] : null;
 
+	console.log(
+		`WINNER DEBUG: winner=${winner}, winnerPlayer=${winnerPlayer?.name}, players count=${Object.keys(players).length}`
+	);
+	console.log(
+		`WINNER DEBUG: All players:`,
+		Object.entries(players).map(
+			([id, p]) => `${id}: ${p.name} (eliminated: ${p.isEliminated})`
+		)
+	);
+
 	React.useEffect(() => {
 		if (isWinner) {
 			// Play winner celebration sound
@@ -26,6 +36,33 @@ export const WinnerView: React.FC = () => {
 			return () => clearTimeout(timer);
 		}
 	}, [isWinner]);
+
+	if (!winnerPlayer && winner) {
+		// Winner is set but player data is missing - try to find from active players
+		const remainingPlayers = Object.entries(players).filter(
+			([_, player]) => !player.isEliminated
+		);
+		if (remainingPlayers.length === 1) {
+			// If there's exactly one remaining player, they should be the winner
+			const actualWinner = remainingPlayers[0];
+			console.log(
+				`WINNER DEBUG: Correcting winner from ${winner} to ${actualWinner[0]}`
+			);
+			return (
+				<div className="mx-auto w-full max-w-2xl space-y-6">
+					<div className="rounded-lg bg-yellow-50 p-6 text-center shadow-md">
+						<div className="mb-4 text-6xl">🏆</div>
+						<div className="prose prose-lg mx-auto text-yellow-800">
+							<ReactMarkdown>{config.winnerMd}</ReactMarkdown>
+						</div>
+						<div className="mt-4 text-2xl font-bold text-yellow-700">
+							{actualWinner[1].name}
+						</div>
+					</div>
+				</div>
+			);
+		}
+	}
 
 	if (!winnerPlayer) {
 		return (

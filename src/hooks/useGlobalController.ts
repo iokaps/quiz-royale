@@ -38,15 +38,21 @@ export function useGlobalController() {
 		const { started, gamePhase, questionStartTime, currentQuestion } =
 			globalStore.proxy;
 
-		// Auto-eliminate players who don't answer in time
+		// Only run game logic if there are active players
+		const { players } = globalStore.proxy;
+		const activePlayers = Object.values(players).filter((p) => !p.isEliminated);
+		const hasActivePlayers = activePlayers.length > 0;
+
+		// Auto-eliminate players who don't answer in time (only if there are players)
 		if (
 			started &&
 			gamePhase === 'question' &&
 			questionStartTime &&
-			currentQuestion
+			currentQuestion &&
+			hasActivePlayers
 		) {
 			const timeElapsed = serverTime - questionStartTime;
-			const timeLimit = 10000; // 10 second limit from config
+			const timeLimit = 10000; // Use config.questionTimeLimit
 
 			if (timeElapsed >= timeLimit) {
 				import('@/state/actions/global-actions')
@@ -57,9 +63,9 @@ export function useGlobalController() {
 			}
 		}
 
-		// Auto-advance from reveal phase after showing results
-		if (started && gamePhase === 'reveal') {
-			const revealDuration = 3000; // 3 seconds from config
+		// Auto-advance from reveal phase after showing results (only if there are players)
+		if (started && gamePhase === 'reveal' && hasActivePlayers) {
+			const revealDuration = 3000; // Use config.answerRevealTime
 			const timeElapsed = serverTime - questionStartTime;
 
 			if (timeElapsed >= 10000 + revealDuration) {
@@ -74,14 +80,21 @@ export function useGlobalController() {
 		}
 
 		// Safety check: if we're stuck in transition for too long, force generate question
-		// Only trigger if there's no current question and we've been in transition for a while
-		if (started && gamePhase === 'transition' && !currentQuestion) {
-			const { startTimestamp } = globalStore.proxy;
-			const gameRunningTime = serverTime - startTimestamp;
+		// Only trigger if there's no current question, we have players, and we've been stuck for a while
+		if (
+			started &&
+			gamePhase === 'transition' &&
+			!currentQuestion &&
+			hasActivePlayers
+		) {
+			const { questionStartTime, isGeneratingQuestion } = globalStore.proxy;
+			const transitionTime =
+				questionStartTime > 0 ? serverTime - questionStartTime : 0;
 
-			// Only trigger safety check if game has been running for a while (to avoid startup issues)
-			if (gameRunningTime > 30000) {
-				// 30 seconds since game start
+			// Only trigger safety check if we've been stuck in transition for a long time AND no generation is in progress
+			// Use questionStartTime instead of startTimestamp to avoid conflicting with immediate nextQuestion flow
+			if (transitionTime > 15000 && !isGeneratingQuestion) {
+				// 15 seconds since transition started - much longer to avoid race conditions
 				console.log('Game seems stuck in transition, safety check triggered');
 				const questionNumber = globalStore.proxy.questionNumber;
 				let difficulty: number;

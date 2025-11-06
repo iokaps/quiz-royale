@@ -59,7 +59,7 @@ const App: React.FC = () => {
 							<div className="flex flex-col gap-4 p-8 text-center">
 								<h2 className="text-3xl font-bold">{config.playerLinkLabel}</h2>
 								<KmQrCode data={playerLink} size={300} interactive={false} />
-								<div className="break-all font-mono text-lg text-blue-600">
+								<div className="font-mono text-lg break-all text-blue-600">
 									{playerLink.replace('https://', '').replace('http://', '')}
 								</div>
 							</div>
@@ -133,6 +133,123 @@ const App: React.FC = () => {
 							<strong>{players[winner]?.name}</strong>
 						</p>
 						<p className="mt-2 text-2xl text-yellow-600">{config.champion}</p>
+					</div>
+				)}
+
+				{/* Final Rankings Display */}
+				{gamePhase === 'finished' && totalPlayers > 0 && (
+					<div className="rounded-lg border border-gray-200 bg-white p-8 shadow-md">
+						<h3 className="mb-6 text-center text-3xl font-bold text-gray-800">
+							Final Rankings
+						</h3>
+						<div className="space-y-4">
+							{(() => {
+								// Create ranking list
+								const rankingList: Array<{
+									rank: number;
+									clientId: string;
+									name: string;
+									isEliminated: boolean;
+									eliminatedAtQuestion: number;
+								}> = [];
+
+								// Add winner (if exists)
+								if (winner && players[winner]) {
+									rankingList.push({
+										rank: 1,
+										clientId: winner,
+										name: players[winner].name,
+										isEliminated: false,
+										eliminatedAtQuestion: 0
+									});
+								}
+
+								// Add eliminated players in reverse elimination order (last eliminated gets better rank)
+								const eliminatedPlayersList = Object.entries(players)
+									.filter(([_, player]) => player.isEliminated)
+									.sort(
+										(a, b) =>
+											b[1].eliminatedAtQuestion - a[1].eliminatedAtQuestion
+									); // Sort by elimination question DESC
+
+								let currentRank = winner ? 2 : 1;
+								let lastEliminationQuestion = -1;
+								let playersAtSameRank = 0;
+
+								eliminatedPlayersList.forEach(([clientId, player]) => {
+									if (player.eliminatedAtQuestion !== lastEliminationQuestion) {
+										// New elimination round
+										currentRank += playersAtSameRank;
+										playersAtSameRank = 1;
+										lastEliminationQuestion = player.eliminatedAtQuestion;
+									} else {
+										// Same elimination round
+										playersAtSameRank++;
+									}
+
+									rankingList.push({
+										rank: currentRank,
+										clientId,
+										name: player.name,
+										isEliminated: true,
+										eliminatedAtQuestion: player.eliminatedAtQuestion
+									});
+								});
+
+								return rankingList.map((entry) => (
+									<div
+										key={entry.clientId}
+										className={cn(
+											'flex items-center justify-between rounded-lg p-4',
+											entry.rank === 1 &&
+												'border border-yellow-200 bg-yellow-50',
+											entry.rank === 2 && 'border border-gray-200 bg-gray-50',
+											entry.rank === 3 &&
+												'border border-orange-200 bg-orange-50',
+											entry.rank > 3 && 'border border-gray-100 bg-white'
+										)}
+									>
+										<div className="flex items-center space-x-4">
+											<div
+												className={cn(
+													'flex h-12 w-12 items-center justify-center rounded-full text-xl font-bold',
+													entry.rank === 1 && 'bg-yellow-500 text-white',
+													entry.rank === 2 && 'bg-gray-400 text-white',
+													entry.rank === 3 && 'bg-orange-500 text-white',
+													entry.rank > 3 && 'bg-gray-200 text-gray-700'
+												)}
+											>
+												{entry.rank === 1
+													? '🏆'
+													: entry.rank === 2
+														? '🥈'
+														: entry.rank === 3
+															? '🥉'
+															: entry.rank}
+											</div>
+											<div>
+												<div className="text-xl font-semibold">
+													{entry.name}
+												</div>
+												<div className="text-sm text-gray-600">
+													{entry.isEliminated
+														? `Eliminated on question ${entry.eliminatedAtQuestion}`
+														: 'Winner!'}
+												</div>
+											</div>
+										</div>
+										<div className="text-right">
+											<div className="text-2xl font-bold text-gray-700">
+												#{entry.rank}
+											</div>
+											<div className="text-sm text-gray-500">
+												of {totalPlayers}
+											</div>
+										</div>
+									</div>
+								));
+							})()}
+						</div>
 					</div>
 				)}
 
