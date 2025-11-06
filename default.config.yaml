@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=./.kokimoki/schema.json
+
+# Theme variables for DaisyUI
+theme:
+  colorBase100: 'oklch(100% 0 0)'
+  colorBase200: 'oklch(97% 0 0)'
+  colorBase300: 'oklch(92% 0 0)'
+  colorBaseContent: 'oklch(20% 0 0)'
+  colorPrimary: 'oklch(85% 0.199 91.936)'
+  colorPrimaryContent: 'oklch(42% 0.095 57.708)'
+  colorSecondary: 'oklch(75% 0.183 55.934)'
+  colorSecondaryContent: 'oklch(40% 0.123 38.172)'
+  colorAccent: 'oklch(0% 0 0)'
+  colorAccentContent: 'oklch(100% 0 0)'
+  colorNeutral: 'oklch(37% 0.01 67.558)'
+  colorNeutralContent: 'oklch(92% 0.003 48.717)'
+  colorInfo: 'oklch(74% 0.16 232.661)'
+  colorInfoContent: 'oklch(39% 0.09 240.876)'
+  colorSuccess: 'oklch(76% 0.177 163.223)'
+  colorSuccessContent: 'oklch(37% 0.077 168.94)'
+  colorWarning: 'oklch(82% 0.189 84.429)'
+  colorWarningContent: 'oklch(41% 0.112 45.904)'
+  colorError: 'oklch(70% 0.191 22.216)'
+  colorErrorContent: 'oklch(39% 0.141 25.723)'
+  radiusSelector: '1rem'
+  radiusField: '0.5rem'
+  radiusBox: '1rem'
+  sizeSelector: '0.25rem'
+  sizeField: '0.25rem'
+  border: '1px'
+  noise: '0'
+  depth: '1'
+
+# Translations
+title: 'Host Starter'
+
+gameLobbyMd: |
+  # Waiting for game to start...
+  The game will start once the host presses the start button.
+
+connectionsMd: |
+  # Connections example
+
+sharedStateMd: |
+  # Shared State example
+
+players: 'Players'
+timeElapsed: 'Time elapsed'
+startButton: 'Start Game'
+stopButton: 'Stop Game'
+
+loading: 'Loading...'
+
+menuTitle: 'Menu'
+menuConnections: 'Connections'
+menuGameLobby: 'Lobby'
+
+playerNameTitle: 'Enter Your Name'
+playerNamePlaceholder: 'Your name...'
+playerNameLabel: 'Name:'
+playerNameButton: 'Continue'
+
+hostLabel: 'Host'
+presenterLabel: 'Presenter'
+
+gameLinksTitle: 'Game Links'
+playerLinkLabel: 'Player Link'
+presenterLinkLabel: 'Presenter Link'
+
+menuAriaLabel: 'Open menu drawer'
