@@ -166,7 +166,10 @@ const App: React.FC = () => {
 
 								// Add eliminated players in reverse elimination order (last eliminated gets better rank)
 								const eliminatedPlayersList = Object.entries(players)
-									.filter(([_, player]) => player.isEliminated)
+									.filter(
+										([clientId, player]) =>
+											player.isEliminated && clientId !== winner
+									) // Exclude winner from eliminated list
 									.sort(
 										(a, b) =>
 											b[1].eliminatedAtQuestion - a[1].eliminatedAtQuestion

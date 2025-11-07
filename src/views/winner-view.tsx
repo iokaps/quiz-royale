@@ -12,16 +12,6 @@ export const WinnerView: React.FC = () => {
 	const isWinner = winner === kmClient.id;
 	const winnerPlayer = winner ? players[winner] : null;
 
-	console.log(
-		`WINNER DEBUG: winner=${winner}, winnerPlayer=${winnerPlayer?.name}, players count=${Object.keys(players).length}`
-	);
-	console.log(
-		`WINNER DEBUG: All players:`,
-		Object.entries(players).map(
-			([id, p]) => `${id}: ${p.name} (eliminated: ${p.isEliminated})`
-		)
-	);
-
 	React.useEffect(() => {
 		if (isWinner) {
 			// Play winner celebration sound

@@ -27,16 +27,6 @@ export const EliminatedView: React.FC = () => {
 	const myEliminationQuestion = currentPlayer.eliminatedAtQuestion;
 	const totalPlayers = Object.keys(players).length;
 
-	// Count how many players were eliminated before this player
-	const playersEliminatedBefore = Object.values(players).filter(
-		(p) => p.isEliminated && p.eliminatedAtQuestion < myEliminationQuestion
-	).length;
-
-	// Count how many players were eliminated on the same question (including this player)
-	const playersEliminatedSameQuestion = Object.values(players).filter(
-		(p) => p.isEliminated && p.eliminatedAtQuestion === myEliminationQuestion
-	).length;
-
 	// Final rank = (players who performed better than me) + 1
 	// Players who performed better = players still alive + players eliminated after me
 	const playersStillAlive = Object.values(players).filter(
@@ -47,13 +37,6 @@ export const EliminatedView: React.FC = () => {
 	).length;
 
 	const finalRank = playersStillAlive + playersEliminatedAfter + 1;
-
-	console.log(
-		`RANKING DEBUG: clientId=${kmClient.id}, eliminatedAtQuestion=${myEliminationQuestion}, totalPlayers=${totalPlayers}, finalRank=${finalRank}`
-	);
-	console.log(
-		`RANKING DEBUG: playersEliminatedBefore=${playersEliminatedBefore}, playersEliminatedSameQuestion=${playersEliminatedSameQuestion}, playersStillAlive=${playersStillAlive}`
-	);
 
 	return (
 		<div className="mx-auto w-full max-w-2xl space-y-6">
