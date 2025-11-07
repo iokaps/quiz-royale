@@ -78,43 +78,6 @@ export function useGlobalController() {
 					.catch(console.error);
 			}
 		}
-
-		// Safety check: if we're stuck in transition for too long, force generate question
-		// Only trigger if there's no current question, we have players, and we've been stuck for a while
-		if (
-			started &&
-			gamePhase === 'transition' &&
-			!currentQuestion &&
-			hasActivePlayers
-		) {
-			const { questionStartTime, isGeneratingQuestion } = globalStore.proxy;
-			const transitionTime =
-				questionStartTime > 0 ? serverTime - questionStartTime : 0;
-
-			// Only trigger safety check if we've been stuck in transition for a long time AND no generation is in progress
-			// Use questionStartTime instead of startTimestamp to avoid conflicting with immediate nextQuestion flow
-			if (transitionTime > 15000 && !isGeneratingQuestion) {
-				// 15 seconds since transition started - much longer to avoid race conditions
-				console.log('Game seems stuck in transition, safety check triggered');
-				const questionNumber = globalStore.proxy.questionNumber;
-				let difficulty: number;
-				if (questionNumber <= 3) {
-					difficulty = 1;
-				} else if (questionNumber <= 6) {
-					difficulty = 2;
-				} else if (questionNumber <= 10) {
-					difficulty = 3;
-				} else {
-					difficulty = Math.min(10, Math.floor((questionNumber - 3) / 5) + 4);
-				}
-
-				import('@/state/actions/global-actions')
-					.then(({ globalActions }) => {
-						globalActions.generateQuestion(difficulty);
-					})
-					.catch(console.error);
-			}
-		}
 	}, [isGlobalController, serverTime]);
 
 	return isGlobalController;

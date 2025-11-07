@@ -164,20 +164,20 @@ export const QuestionView: React.FC = () => {
 			</div>
 
 			{/* Results Info */}
-			{showResults && (
-				<div className="rounded-lg bg-gray-50 p-4 text-center">
-					<div className="space-y-2">
-						<div className="text-sm text-gray-600">
-							{config.correctAnswer}: {currentQuestion.correctAnswer}
-						</div>
-						{selectedAnswer && (
+			{showResults &&
+				selectedAnswer &&
+				selectedAnswer !== currentQuestion.correctAnswer && (
+					<div className="rounded-lg bg-gray-50 p-4 text-center">
+						<div className="space-y-2">
+							<div className="text-sm text-gray-600">
+								{config.correctAnswer}: {currentQuestion.correctAnswer}
+							</div>
 							<div className="text-sm text-gray-600">
 								{config.yourAnswer}: {selectedAnswer}
 							</div>
-						)}
+						</div>
 					</div>
-				</div>
-			)}
+				)}
 		</div>
 	);
 };

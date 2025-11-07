@@ -19,7 +19,8 @@ export const HostGameView: React.FC = () => {
 		players,
 		eliminatedPlayers,
 		winner,
-		isGeneratingQuestion
+		isGeneratingQuestions,
+		questions
 	} = useSnapshot(globalStore.proxy);
 
 	const onlineClientIds = useSnapshot(globalStore.connections).clientIds;
@@ -90,13 +91,30 @@ export const HostGameView: React.FC = () => {
 						</div>
 					)}
 
-					<button
-						onClick={handleStartGame}
-						disabled={totalPlayers === 0}
-						className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
-					>
-						{config.startButton}
-					</button>
+					{isGeneratingQuestions ? (
+						<div className="mt-4 w-full rounded-lg bg-orange-100 p-4 text-center">
+							<div className="mb-2 text-lg font-semibold text-orange-800">
+								Generating Questions...
+							</div>
+							<div className="text-sm text-orange-600">
+								{questions.length}/30 questions generated
+							</div>
+							<div className="mt-2 h-2 w-full rounded-full bg-orange-200">
+								<div
+									className="h-2 rounded-full bg-orange-500 transition-all duration-300"
+									style={{ width: `${(questions.length / 30) * 100}%` }}
+								/>
+							</div>
+						</div>
+					) : (
+						<button
+							onClick={handleStartGame}
+							disabled={totalPlayers === 0}
+							className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+						>
+							{config.startButton}
+						</button>
+					)}
 				</div>
 			</div>
 		);
@@ -225,12 +243,9 @@ export const HostGameView: React.FC = () => {
 					{gamePhase === 'reveal' && activePlayers > 1 && (
 						<button
 							onClick={handleNextQuestion}
-							disabled={isGeneratingQuestion}
-							className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:bg-gray-400"
+							className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
 						>
-							{isGeneratingQuestion
-								? config.generateQuestionLoading
-								: config.nextQuestionButton}
+							{config.nextQuestionButton}
 						</button>
 					)}
 

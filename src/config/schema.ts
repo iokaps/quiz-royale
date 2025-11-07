@@ -75,7 +75,7 @@ export const schema = z.object({
 	aiSystemPrompt: z
 		.string()
 		.default(
-			'You are a trivia question generator. Create engaging multiple-choice questions with exactly 4 options (A, B, C, D). Always vary the topic and category for each question. Return only valid JSON in this exact format: {"question": "Question text here?", "options": {"A": "Option A", "B": "Option B", "C": "Option C", "D": "Option D"}, "correctAnswer": "A"}'
+			'You are an expert trivia question generator specializing in creating unique, engaging questions. Create diverse multiple-choice questions with exactly 4 options (A, B, C, D). CRITICAL: Each question must be completely unique - avoid common, overused trivia questions. Focus on interesting, lesser-known facts while maintaining accuracy. Ensure all options are plausible but only one is definitively correct. Return only valid JSON in this exact format: {"question": "Question text here?", "options": {"A": "Option A", "B": "Option B", "C": "Option C", "D": "Option D"}, "correctAnswer": "A"}'
 		),
 	aiUserPromptTemplate: z
 		.string()

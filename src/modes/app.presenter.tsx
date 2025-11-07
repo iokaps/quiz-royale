@@ -22,7 +22,9 @@ const App: React.FC = () => {
 		questionStartTime,
 		players,
 		eliminatedPlayers,
-		winner
+		winner,
+		isGeneratingQuestions,
+		questions
 	} = useSnapshot(globalStore.proxy);
 
 	const serverTime = useServerTimer();
@@ -80,9 +82,26 @@ const App: React.FC = () => {
 								<div className="mb-2 text-6xl font-bold text-blue-600">
 									{totalPlayers}
 								</div>
-								<div className="text-lg text-gray-600">
-									Waiting for host to start...
-								</div>
+								{isGeneratingQuestions ? (
+									<div className="space-y-3">
+										<div className="text-lg font-semibold text-orange-600">
+											Generating Questions...
+										</div>
+										<div className="text-sm text-orange-500">
+											{questions.length}/30 questions ready
+										</div>
+										<div className="mx-auto h-3 w-3/4 rounded-full bg-orange-200">
+											<div
+												className="h-3 rounded-full bg-orange-500 transition-all duration-300"
+												style={{ width: `${(questions.length / 30) * 100}%` }}
+											/>
+										</div>
+									</div>
+								) : (
+									<div className="text-lg text-gray-600">
+										Waiting for host to start...
+									</div>
+								)}
 							</div>
 						</div>
 					</div>

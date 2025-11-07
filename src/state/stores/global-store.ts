@@ -30,6 +30,10 @@ export interface GlobalState {
 	// Game phases: 'lobby' | 'question' | 'reveal' | 'transition' | 'finished'
 	gamePhase: 'lobby' | 'question' | 'reveal' | 'transition' | 'finished';
 
+	// Pre-generated questions
+	questions: Question[];
+	isGeneratingQuestions: boolean;
+
 	// Current question data
 	currentQuestion: Question | null;
 	questionNumber: number;
@@ -40,7 +44,7 @@ export interface GlobalState {
 	eliminatedPlayers: string[]; // Array of clientIds in elimination order (sorted lexicographically for consistent tie-breaking)
 	winner: string; // clientId of the winner
 
-	// Question generation state
+	// Question generation state (deprecated - keeping for compatibility)
 	isGeneratingQuestion: boolean;
 }
 
@@ -49,6 +53,8 @@ const initialState: GlobalState = {
 	started: false,
 	startTimestamp: 0,
 	gamePhase: 'lobby',
+	questions: [],
+	isGeneratingQuestions: false,
 	currentQuestion: null,
 	questionNumber: 0,
 	questionStartTime: 0,
